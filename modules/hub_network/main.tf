@@ -51,3 +51,51 @@ resource "azurerm_firewall" "hub_fw" {
 
   tags = var.tags
 }
+
+resource "azurerm_firewall_network_rule_collection" "east_west_inspection" {
+  name                = "fw-netrules-east-west"
+  azure_firewall_name = azurerm_firewall.hub_fw.name
+  resource_group_name = var.resource_group_name
+  priority            = 100
+  action              = "Allow"
+
+  rule {
+    name                  = "SpokeToSpokeInternal"
+    source_addresses      = ["10.10.0.0/16"]
+    destination_addresses = ["10.20.0.0/16"]
+    destination_ports     = ["443", "80", "5432"]
+    protocols             = ["TCP"]
+  }
+
+  rule {
+    name                  = "SpokeDataToAppInternal"
+    source_addresses      = ["10.20.0.0/16"]
+    destination_addresses = ["10.10.0.0/16"]
+    destination_ports     = ["443", "80"]
+    protocols             = ["TCP"]
+  }
+}
+
+resource "azurerm_public_ip" "bastion_pip" {
+  name                = "pip-bastion-core"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = var.tags
+}
+
+resource "azurerm_bastion_host" "hub_bastion" {
+  name                = "bas-core-hub"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  sku                 = "Standard"
+
+  ip_configuration {
+    name                 = "bastion-ipconfig"
+    subnet_id            = azurerm_subnet.bastion.id
+    public_ip_address_id = azurerm_public_ip.bastion_pip.id
+  }
+
+  tags = var.tags
+}

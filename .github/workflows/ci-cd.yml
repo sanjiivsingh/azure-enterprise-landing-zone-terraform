@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   validate-and-security:
     name: "Pre-Flight Linting & Shift-Left Security"
@@ -22,6 +26,12 @@ jobs:
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
+
+      - name: Terraform Initialize & Validate
+        run: |
+          cd environments/dev
+          terraform init -backend=false
+          terraform validate
 
       - name: Run TFLint
         uses: terraform-linters/setup-tflint@v4
