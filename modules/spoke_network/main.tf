@@ -23,7 +23,7 @@ resource "azurerm_subnet" "data" {
 # Hub to Spoke Peering
 resource "azurerm_virtual_network_peering" "hub_to_spoke" {
   name                      = "peer-${var.hub_vnet_name}-to-${azurerm_virtual_network.spoke.name}"
-  resource_group_name       = var.resource_group_name
+  resource_group_name       = var.hub_resource_group_name
   virtual_network_name      = var.hub_vnet_name
   remote_virtual_network_id = azurerm_virtual_network.spoke.id
 
@@ -49,7 +49,7 @@ resource "azurerm_route_table" "spoke_udr" {
   name                          = "rt-${var.spoke_vnet_name}"
   location                      = var.location
   resource_group_name           = var.resource_group_name
-  disable_bgp_route_propagation = false
+  bgp_route_propagation_enabled = true
 
   route {
     name                   = "DefaultRouteToFirewall"
@@ -63,5 +63,10 @@ resource "azurerm_route_table" "spoke_udr" {
 
 resource "azurerm_subnet_route_table_association" "workload" {
   subnet_id      = azurerm_subnet.workload.id
+  route_table_id = azurerm_route_table.spoke_udr.id
+}
+
+resource "azurerm_subnet_route_table_association" "data" {
+  subnet_id      = azurerm_subnet.data.id
   route_table_id = azurerm_route_table.spoke_udr.id
 }
