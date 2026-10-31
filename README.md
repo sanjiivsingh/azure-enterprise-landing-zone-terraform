@@ -3,11 +3,11 @@
 [![Terraform 1.9+](https://img.shields.io/badge/Terraform-1.9+-844FBA?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Azure Provider v4+](https://img.shields.io/badge/AzureRM-v4.0+-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://registry.terraform.io/providers/hashicorp/azurerm/latest)
 [![CI/CD Validation](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/workflows/ci-cd.yml)
-[![Status: Reference Architecture](https://img.shields.io/badge/Status-Reference_Architecture_(Statically_Validated)-10B981?style=for-the-badge)](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Status: Statically Validated](https://img.shields.io/badge/Status-Statically_Validated-10B981?style=for-the-badge)](docs/EVIDENCE.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 > **Reference Architecture · Statically Validated**  
-> Enterprise Microsoft Azure Hub-and-Spoke Landing Zone implemented using modular Terraform. Designed around Microsoft Cloud Adoption Framework (CAF) standards, featuring centralized Azure Firewall (Standard SKU) traffic inspection, automated bidirectional VNet peering, custom User-Defined Routes (UDRs), Azure Bastion jumpbox connectivity, and dual-spoke (App & Data) network isolation.
+> Enterprise Microsoft Azure Hub-and-Spoke Landing Zone implemented using modular Terraform. Designed around Microsoft Cloud Adoption Framework (CAF) standards, featuring centralized Azure Firewall (Standard SKU) traffic inspection, automated bidirectional VNet peering, custom User-Defined Routes (UDRs), Azure Bastion jumpbox connectivity, and dual-spoke (App & Data) network isolation. Verification evidence is documented in [docs/EVIDENCE.md](docs/EVIDENCE.md) and architectural decisions in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -16,26 +16,26 @@
 ```mermaid
 flowchart TD
     subgraph Hub["🏢 Central Connectivity Hub (10.0.0.0/16)"]
-        AFW["🔥 Azure Firewall (Standard SKU)\nCentral 0.0.0.0/0 & East-West Inspection"]
-        BASTION["🛡️ Azure Bastion Subnet\n(Zero-Public IP Jumpbox Access)"]
-        GW["🌐 VPN / ExpressRoute Gateway\n(Hybrid On-Premises Interconnect)"]
+        AFW["🔥 Azure Firewall (Standard SKU)<br/>Central 0.0.0.0/0 & East-West Inspection"]
+        BASTION["🛡️ Azure Bastion Subnet<br/>Zero-Public IP Jumpbox Access"]
+        GW["🌐 VPN / ExpressRoute Gateway<br/>Hybrid On-Premises Interconnect"]
     end
 
     subgraph SpokeApp["🚀 Spoke 1: Application Workload (10.10.0.0/16)"]
-        UDR_APP["🛣️ Spoke UDR Table\nDefault 0.0.0.0/0 -> Azure Firewall"]
-        APPS["💻 Application Subnet (10.10.1.0/24)\nPrivate Ingress & Compute"]
-        APP_DATA["🗄️ App Data Subnet (10.10.2.0/24)\nService-Specific Storage"]
+        UDR_APP["🛣️ Spoke UDR Table<br/>Default 0.0.0.0/0 -> Azure Firewall"]
+        APPS["💻 Application Subnet (10.10.1.0/24)<br/>Private Ingress & Compute"]
+        APP_DATA["🗄️ App Data Subnet (10.10.2.0/24)<br/>Service-Specific Storage"]
     end
 
     subgraph SpokeData["🗃️ Spoke 2: Data & Persistence Tier (10.20.0.0/16)"]
-        UDR_DATA["🛣️ Spoke UDR Table\nDefault 0.0.0.0/0 -> Azure Firewall"]
-        DB["💾 Managed Database Subnet (10.20.1.0/24)\nPostgreSQL / Storage"]
-        ANALYTICS["📊 Analytics Subnet (10.20.2.0/24)\nInternal ETL & Worker Pools"]
+        UDR_DATA["🛣️ Spoke UDR Table<br/>Default 0.0.0.0/0 -> Azure Firewall"]
+        DB["💾 Managed Database Subnet (10.20.1.0/24)<br/>PostgreSQL / Storage"]
+        ANALYTICS["📊 Analytics Subnet (10.20.2.0/24)<br/>Internal ETL & Worker Pools"]
     end
 
-    Internet((🌍 Public Internet)) <-->|Egress Filtering (FQDN & L4)| AFW
-    Hub <==>|Bidirectional VNet Peering| SpokeApp
-    Hub <==>|Bidirectional VNet Peering| SpokeData
+    Internet["🌍 Public Internet"] <-->|Egress Filtering FQDN & L4| AFW
+    Hub <-->|Bidirectional VNet Peering| SpokeApp
+    Hub <-->|Bidirectional VNet Peering| SpokeData
 
     APPS --> UDR_APP --> AFW
     AFW -->|East-West Inspected Routing| UDR_DATA --> DB
@@ -58,6 +58,9 @@ Uncontrolled cloud adoption often results in:
 
 ```text
 azure-enterprise-landing-zone-terraform/
+├── docs/
+│   ├── ARCHITECTURE.md          # Architectural Decision Records (ADRs)
+│   └── EVIDENCE.md              # CI run logs, test commands, and cost breakdown
 ├── environments/
 │   └── dev/
 │       ├── main.tf              # Environment root: instantiates Hub, Spoke 1, and Spoke 2
@@ -116,10 +119,10 @@ Every pull request and push to `main` automatically triggers `.github/workflows/
 
 ---
 
-## 👨‍💻 Author & Cloud Consultant
+## 👨‍💻 Author & Cloud Architect
 
 **Sanjeev Singh**  
-*Freelance Azure Cloud Engineer | Terraform & Infrastructure Automation*  
+*Senior Azure Cloud Architect & DevSecOps Platform Engineer*  
 * 🌐 **Portfolio**: [sanjeevsingh.oneps.in](https://sanjeevsingh.oneps.in)  
 * 💼 **LinkedIn**: [linkedin.com/in/sanjiivsingh](https://linkedin.com/in/sanjiivsingh)  
 * 🐙 **GitHub**: [github.com/sanjiivsingh](https://github.com/sanjiivsingh)
