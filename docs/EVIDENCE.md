@@ -49,3 +49,4 @@ Success! The configuration is valid.
 | **Total Base Monthly Est.** | | | **~$1,058.50 / month** |
 
 > *Note on Sandbox Deployments:* Due to base Azure Firewall and Bastion hourly charges (~$1.45/hr), reference architectures should run through `terraform plan` for static evaluation, or deployed to an approved sandbox and destroyed immediately (`terraform destroy -auto-approve`).
+

@@ -37,3 +37,4 @@ Authenticating CI/CD pipelines historically required generating long-lived Servi
 Adopt **Microsoft Entra Workload Identity Federation (GitHub OIDC)**:
 - **Zero Secret Rotation:** Eliminates secret expiration and rotation operational overhead.
 - **Least-Privilege Scoping:** Tokens are minted on-demand for specific GitHub repository/branch claims.
+

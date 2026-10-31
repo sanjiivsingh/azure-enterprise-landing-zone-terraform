@@ -14,3 +14,4 @@ Please include:
 3. Potential impact on Azure infrastructure or perimeter boundaries
 
 We will acknowledge receipt within 48 hours and work on remediation promptly.
+

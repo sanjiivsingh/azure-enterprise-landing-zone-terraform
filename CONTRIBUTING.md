@@ -24,3 +24,4 @@ Thank you for your interest in improving this Azure Landing Zone reference archi
    checkov -d . --framework terraform
    ```
 5. Submit a Pull Request targeting `main` with detailed test evidence.
+
