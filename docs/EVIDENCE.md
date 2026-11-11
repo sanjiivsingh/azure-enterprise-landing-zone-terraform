@@ -7,7 +7,6 @@ This document presents concrete, audit-verified evidence of syntax validation, p
 * **Pipeline Name:** DevSecOps Landing Zone CI/CD (`.github/workflows/ci-cd.yml`)
 * **Latest Passing Run ID:** `40450305601`
 * **Direct CI Run URL:** [https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/runs/40450305601](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/runs/40450305601)
-* **Preceding Validated Run:** [https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/runs/40450027709](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/runs/40450027709)
 
 ---
 
@@ -23,20 +22,46 @@ terraform validate
 **Output:**
 ```text
 Initializing modules...
-- hub in ../../modules/hub_network
-- spoke_app in ../../modules/spoke_network
-- spoke_data in ../../modules/spoke_network
+- spoke_network in ../../modules/spoke-network
+- hub_network in ../../modules/hub-network
+- resource_group in ../../modules/resource-group
 
 Initializing provider plugins...
-- Finding hashicorp/azurerm versions matching "~> 4.0"...
-- Installing hashicorp/azurerm v4.81.0...
+- Reusing previous version of hashicorp/azurerm from the dependency lock file
+- Using previously-installed hashicorp/azurerm v5.12.0
 
 Success! The configuration is valid.
 ```
 
 ---
 
-## 3. Estimated Infrastructure Cost (Infracost Summary)
+## 3. Plan Verification Evidence
+
+Command executed:
+```bash
+cd environments/dev
+terraform plan
+```
+
+**Output Summary:**
+```text
+Plan: 28 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + firewall_private_ip = (known after apply)
+  + hub_vnet_id         = (known after apply)
+  + hub_vnet_name       = "vnet-oneps-dev-hub"
+  + spoke_app_vnet_id   = (known after apply)
+  + spoke_data_vnet_id  = (known after apply)
+  + spoke_vnet_ids      = {
+      + spoke_app  = (known after apply)
+      + spoke_data = (known after apply)
+    }
+```
+
+---
+
+## 4. Estimated Infrastructure Cost (Infracost Summary)
 
 | Component | SKU / Tier | Count | Est. Monthly Cost (USD) |
 | :--- | :--- | :---: | :---: |
@@ -49,4 +74,3 @@ Success! The configuration is valid.
 | **Total Base Monthly Est.** | | | **~$1,058.50 / month** |
 
 > *Note on Sandbox Deployments:* Due to base Azure Firewall and Bastion hourly charges (~$1.45/hr), reference architectures should run through `terraform plan` for static evaluation, or deployed to an approved sandbox and destroyed immediately (`terraform destroy -auto-approve`).
-

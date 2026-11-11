@@ -38,3 +38,15 @@ Adopt **Microsoft Entra Workload Identity Federation (GitHub OIDC)**:
 - **Zero Secret Rotation:** Eliminates secret expiration and rotation operational overhead.
 - **Least-Privilege Scoping:** Tokens are minted on-demand for specific GitHub repository/branch claims.
 
+---
+
+## ADR-004: Decoupled Child Modules and Dynamic Locals CIDR Derivation
+
+### Context
+Hardcoding subnets, VNets, and peerings inside monolithic modules limits reusability and scalability when expanding across multiple environments (Dev, Staging, Prod) or when onboarding additional spoke tiers (e.g., AI, Analytics, Shared Services).
+
+### Decision
+Adopt the decoupled child module architecture modeled after [`azure-hub-spoke-storage-private-endpoint`](https://github.com/sanjiivsingh/azure-hub-spoke-storage-private-endpoint):
+- **Object-Based Module Interfaces:** Child modules (`modules/resource-group`, `modules/hub-network`, `modules/spoke-network`) accept typed `*_config` objects and remain completely environment-agnostic.
+- **Dynamic CIDR Math in `locals.tf`:** Subnet address allocations are computed mathematically using Terraform's `cidrsubnet()` function to prevent overlapping address allocations.
+- **Scalable Orchestration via `for_each`:** Spokes and resource groups are instantiated via `for_each = local.*`, enabling new network tiers to be provisioned purely through `terraform.tfvars` declarations with zero modifications to underlying module code.

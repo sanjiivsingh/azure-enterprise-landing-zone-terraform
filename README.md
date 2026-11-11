@@ -1,13 +1,13 @@
 # 🏛️ Enterprise Azure Hub-and-Spoke Landing Zone (Terraform)
 
 [![Terraform 1.9+](https://img.shields.io/badge/Terraform-1.9+-844FBA?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
-[![Azure Provider v4+](https://img.shields.io/badge/AzureRM-v4.0+-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://registry.terraform.io/providers/hashicorp/azurerm/latest)
+[![Azure Provider v5+](https://img.shields.io/badge/AzureRM-v5.0+-0078D4?style=for-the-badge&logo=microsoftazure&logoColor=white)](https://registry.terraform.io/providers/hashicorp/azurerm/latest)
 [![CI/CD Validation](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/sanjiivsingh/azure-enterprise-landing-zone-terraform/actions/workflows/ci-cd.yml)
 [![Status: Statically Validated](https://img.shields.io/badge/Status-Statically_Validated-10B981?style=for-the-badge)](docs/EVIDENCE.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 > **Reference Architecture · Statically Validated**  
-> Enterprise Microsoft Azure Hub-and-Spoke Landing Zone implemented using modular Terraform. Designed around Microsoft Cloud Adoption Framework (CAF) standards, featuring centralized Azure Firewall (Standard SKU) traffic inspection, automated bidirectional VNet peering, custom User-Defined Routes (UDRs), Azure Bastion jumpbox connectivity, and dual-spoke (App & Data) network isolation. Verification evidence is documented in [docs/EVIDENCE.md](docs/EVIDENCE.md) and architectural decisions in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+> Enterprise Microsoft Azure Hub-and-Spoke Landing Zone implemented using modular, scalable Terraform child modules. Designed around Microsoft Cloud Adoption Framework (CAF) standards, featuring dynamic `locals.tf` CIDR derivation via `cidrsubnet()`, centralized Azure Firewall (Standard SKU) traffic inspection, automated bidirectional VNet peering, custom User-Defined Routes (UDRs), Azure Bastion jumpbox connectivity, and multi-spoke (App & Data) network isolation. Verification evidence is documented in [docs/EVIDENCE.md](docs/EVIDENCE.md) and architectural decisions in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -50,11 +50,11 @@ Uncontrolled cloud adoption often results in:
 2. **Uninspected Outbound Internet Traffic:** Workload resources having public IPs or unfiltered egress, creating exfiltration vulnerabilities.
 3. **Uncontrolled East-West Traffic:** Uninspected traffic between app and database tiers.
 
-**Solution:** This Landing Zone implements a standardized transit Hub network routing all spoke-to-spoke and spoke-to-internet traffic through Azure Firewall via automated User-Defined Routes (`0.0.0.0/0 -> module.hub.firewall_private_ip`).
+**Solution:** This Landing Zone implements a standardized transit Hub network routing all spoke-to-spoke and spoke-to-internet traffic through Azure Firewall via automated User-Defined Routes (`0.0.0.0/0 -> module.hub_network["hub1"].firewall_private_ip`).
 
 ---
 
-## ⚙️ Repository Structure
+## ⚙️ Scalable Repository Structure
 
 ```text
 azure-enterprise-landing-zone-terraform/
@@ -62,16 +62,43 @@ azure-enterprise-landing-zone-terraform/
 │   ├── ARCHITECTURE.md          # Architectural Decision Records (ADRs)
 │   └── EVIDENCE.md              # CI run logs, test commands, and cost breakdown
 ├── environments/
-│   └── dev/
-│       ├── main.tf              # Environment root: instantiates Hub, Spoke 1, and Spoke 2
-│       ├── variables.tf         # Input declarations
-│       ├── terraform.tfvars     # Parameter values (location, environment)
-│       ├── outputs.tf           # Exposed IDs and Firewall private IP
-│       └── provider.tf          # AzureRM provider & documented remote backend
+│   ├── README.md                # Environment promotion & structure guide
+│   ├── dev/
+│   │   ├── main.tf              # Instantiates scalable child modules via for_each
+│   │   ├── locals.tf            # Standard naming & dynamic CIDR computation (cidrsubnet)
+│   │   ├── variables.tf         # Input schema declarations
+│   │   ├── terraform.tfvars     # Dev environment configuration values
+│   │   ├── outputs.tf           # Exposed Hub VNet ID, Firewall IP, and Spoke IDs
+│   │   ├── provider.tf          # AzureRM provider block
+│   │   ├── version.tf           # Terraform & AzureRM version constraints
+│   │   ├── backend.tf           # Remote state backend template
+│   │   └── README.md            # Detailed Dev deployment runbook
+│   └── prod/
+│       └── README.md            # Production deployment & hardening blueprint
 └── modules/
-    ├── hub_network/             # Hub VNet, Azure Firewall (Standard), Bastion, GatewaySubnet
-    └── spoke_network/           # Spoke VNet, Subnets, UDR table, VNet Peering
+    ├── README.md                # Modular child module catalog
+    ├── resource-group/          # Decoupled Resource Group child module
+    ├── hub-network/             # Hub VNet, Subnets, Azure Firewall (Standard), Bastion
+    └── spoke-network/           # Spoke VNet, Dynamic Subnets, UDR table, Bidirectional Peering
 ```
+
+---
+
+## 📋 Dynamic `locals.tf` & Modular Design Pattern
+
+Following the enterprise architecture of [`azure-hub-spoke-storage-private-endpoint`](https://github.com/sanjiivsingh/azure-hub-spoke-storage-private-endpoint):
+1. **Scalable Child Modules**: Modules accept typed `*_config` objects without hardcoded environment identifiers or regional constraints.
+2. **Algorithmic Subnetting**: `locals.tf` uses Terraform's built-in `cidrsubnet()` to compute non-overlapping subnets mathematically:
+   ```hcl
+   address_prefixes = [
+     cidrsubnet(
+       value.address_space[0],
+       s_val.subnet_prefix - tonumber(split("/", value.address_space[0])[1]),
+       s_val.subnet_num
+     )
+   ]
+   ```
+3. **Dynamic Orchestration**: `environments/dev/main.tf` instantiates resources using `for_each = local.*`, enabling arbitrary numbers of spoke networks (e.g. App, Data, AI, Shared Services) by simply extending `terraform.tfvars`.
 
 ---
 
@@ -86,10 +113,10 @@ This project is designed for passwordless authentication via Microsoft Entra Wor
 
 ```bash
 cd environments/dev
-terraform init
-terraform fmt -check
+terraform init -backend=false
+terraform fmt -check -recursive
 terraform validate
-terraform plan -out=tfplan
+terraform plan
 ```
 
 ### 3. Cleanup & Resource Teardown
@@ -113,7 +140,7 @@ Every pull request and push to `main` automatically triggers `.github/workflows/
 ## 🛡️ Security Implementation Details
 
 * **Zero Public IPs on Spoke Workloads:** All spoke subnets remain private with no direct public IPs.
-* **Dynamic Egress Routing:** Spoke route tables reference the Azure Firewall private IP dynamically via module output (`module.hub.firewall_private_ip`).
+* **Dynamic Egress Routing:** Spoke route tables reference the Azure Firewall private IP dynamically via module output (`module.hub_network["hub1"].firewall_private_ip`).
 * **Bastion Jumpbox Connectivity:** Management access is mediated through Azure Bastion without exposing SSH/RDP ports directly to the internet.
 * **Standard SKU Alignment:** Configured for Azure Firewall Standard SKU (`sku_tier = "Standard"`, `sku_name = "AZFW_VNet"`), supporting Layer 4 network filtering and FQDN application rules without requiring custom enterprise CA certificates.
 
